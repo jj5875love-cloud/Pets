@@ -1,0 +1,12 @@
+[build]
+  # 빌드 과정이 필요 없는 순수 정적 사이트입니다.
+  # 이 폴더(레포 루트) 자체를 그대로 배포합니다.
+  publish = "."
+  command = ""
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # 카카오맵 SDK, 폰트(CDN) 등을 문제없이 불러오기 위한 기본 헤더
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
