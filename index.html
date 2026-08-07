@@ -111,6 +111,10 @@ header{
 .gate-card p{font-size:13px;line-height:1.6;color:var(--ink-soft);margin:0 0 14px;}
 .gate-card a{color:var(--navy);font-weight:600;}
 .gate-row{display:flex;gap:8px;}
+@media (max-width:480px){
+  .gate-row{flex-direction:column;}
+  .gate-card{padding:22px 18px 18px;}
+}
 #kakaoKeyInput{
   flex:1;
   padding:10px 12px;
@@ -140,11 +144,14 @@ header{
   display:grid;
   grid-template-columns:340px 1fr;
   min-height:0;
+  position:relative;
 }
 @media (max-width: 860px){
-  #main{grid-template-columns:1fr;grid-template-rows: auto 1fr;}
-  #sidebar{order:2; max-height:46vh;}
-  #mapWrap{order:1; min-height:40vh;}
+  #main{
+    display:block;
+    position:relative;
+    overflow:hidden;
+  }
 }
 
 /* ---------- sidebar ---------- */
@@ -153,6 +160,39 @@ header{
   border-right:1px solid var(--line);
   overflow-y:auto;
   min-height:0;
+}
+.sheet-handle, .sheet-close{display:none;}
+@media (max-width:860px){
+  #sidebar{
+    position:absolute;
+    left:0;right:0;bottom:0;top:12%;
+    border-right:none;
+    border-top:1px solid var(--line-strong);
+    border-radius:16px 16px 0 0;
+    box-shadow:0 -10px 30px rgba(34,40,29,.28);
+    transform:translateY(102%);
+    transition:transform .28s ease;
+    z-index:40;
+  }
+  body.sheet-open #sidebar{transform:translateY(0);}
+  .sheet-handle{
+    display:block;
+    width:38px;height:4px;border-radius:3px;
+    background:var(--line-strong);
+    margin:10px auto 2px;
+  }
+  .sheet-close{
+    display:block;
+    width:calc(100% - 36px);
+    margin:6px 18px 0;
+    padding:9px 0;
+    background:var(--moss);
+    color:#fff;
+    border:none;border-radius:5px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    cursor:pointer;
+  }
 }
 .filter-section{
   padding:14px 18px;
@@ -226,8 +266,27 @@ header{
   margin-top:10px;
 }
 
+@media (max-width:860px){
+  /* 16px avoids iOS Safari auto-zoom-on-focus; bigger touch targets throughout */
+  #searchInput, #sidoSelect, #kakaoKeyInput{font-size:16px;}
+  .chip{padding:8px 11px;font-size:12.5px;min-height:36px;display:flex;align-items:center;}
+  .place-card{padding:14px 18px;}
+  header{padding:12px 16px;}
+  .brand h1{font-size:17px;}
+  .brand p{display:none;}
+}
+@media (max-width:420px){
+  .brand .stamp{display:none;}
+  .header-meta{font-size:10px;}
+  #countBadge{font-size:11px;padding:6px 10px;}
+  #locBtn{font-size:11px;padding:6px 10px;}
+}
+
 /* ---------- map area ---------- */
 #mapWrap{position:relative;min-height:0;}
+@media (max-width:860px){
+  #mapWrap{position:absolute;inset:0;}
+}
 #map{width:100%;height:100%;}
 #resultBar{
   position:absolute;top:12px;left:12px;right:12px;
@@ -235,6 +294,7 @@ header{
   gap:8px;
   z-index:5;
   pointer-events:none;
+  flex-wrap:wrap;
 }
 #countBadge{
   background:var(--ink);
@@ -261,24 +321,25 @@ header{
 }
 #locBtn:hover{background:var(--moss-pale);}
 
-/* mobile toggle */
+/* mobile bottom tab bar */
 #viewToggle{display:none;}
 @media (max-width:860px){
   #viewToggle{
-    display:flex;position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
-    z-index:6; background:var(--ink); border-radius:20px; overflow:hidden; box-shadow:var(--shadow);
+    display:flex;position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
+    z-index:41; background:var(--ink); border-radius:22px; overflow:hidden; box-shadow:var(--shadow);
   }
   #viewToggle button{
-    border:none;background:none;color:#DCD6BE;font-size:12px;padding:9px 16px;font-family:'JetBrains Mono',monospace;cursor:pointer;
+    border:none;background:none;color:#DCD6BE;font-size:13px;padding:11px 20px;
+    font-family:'JetBrains Mono',monospace;cursor:pointer;min-height:40px;
   }
   #viewToggle button.active{background:var(--rust);color:#fff;}
 }
 
 /* ---------- list ---------- */
 #listPanel{
-  display:none;
+  /* always visible: on desktop it sits below the filters in the sidebar column;
+     on mobile it's part of the same slide-up sheet as the filters. */
 }
-#listPanel.show{display:block;}
 .place-card{
   background:var(--paper-card);
   border-bottom:1px solid var(--line);
@@ -415,6 +476,8 @@ header{
 
   <div id="main">
     <aside id="sidebar">
+      <div class="sheet-handle"></div>
+      <button class="sheet-close" id="sheetCloseBtn">지도로 보기 ↓</button>
       <div class="filter-section">
         <h3>검색</h3>
         <input id="searchInput" type="text" placeholder="장소명 또는 주소 검색 (예: 애견카페, 강릉)">
@@ -468,8 +531,8 @@ header{
         <button id="locBtn">📍 내 주변으로 이동</button>
       </div>
       <div id="viewToggle">
-        <button class="active" data-view="map">지도</button>
-        <button data-view="list">목록</button>
+        <button class="active" data-mode="map">🗺 지도</button>
+        <button data-mode="sheet">☰ 필터·목록</button>
       </div>
       <div id="detailPanel"></div>
     </div>
@@ -482,7 +545,7 @@ header{
     <h2>카카오맵 JavaScript 키를 입력하세요</h2>
     <p>
       알려주신 JavaScript 키를 미리 넣어뒀어요. 이 앱은 키를 저장·전송하지 않고 브라우저 안에서만 사용합니다.<br><br>
-      지도가 안 뜬다면, <a href="https://developers.kakao.com/" target="_blank" rel="noopener">Kakao Developers</a> 콘솔 &gt; 해당 앱 &gt; <b>플랫폼 &gt; Web</b>에 이 페이지를 여는 도메인(로컬에서 열었다면 <span class="mono">localhost</span> 또는 <span class="mono">file://</span> 대신 간단한 로컬 서버 주소)이 등록되어 있는지 확인해주세요. 카카오는 도메인이 등록되지 않으면 키가 맞아도 지도를 막습니다.
+      지도가 안 뜬다면, <a href="https://developers.kakao.com/" target="_blank" rel="noopener">Kakao Developers</a> 콘솔 &gt; 해당 앱 &gt; <b>플랫폼 &gt; Web</b>에 <b>지금 이 페이지를 열고 있는 실제 주소(예: https://내사이트이름.netlify.app)</b>가 등록되어 있는지 확인해주세요. 카카오는 도메인이 등록되지 않으면 키가 맞아도 지도를 막습니다.
     </p>
     <div class="gate-row">
       <input id="kakaoKeyInput" type="text" placeholder="예: 3f2a1b9c..." value="e22f20756a9c0f29b4aa319c37fe444f">
@@ -726,6 +789,7 @@ function focusPlace(p, moveMap=true){
   }
   document.querySelectorAll('.place-card').forEach(c=>c.classList.toggle('selected', +c.dataset.id===p._id));
   showDetail(p);
+  if(mobileQuery.matches) setMobileMode('map');
 }
 
 function showDetail(p){
@@ -770,20 +834,23 @@ document.getElementById('locBtn').addEventListener('click', ()=>{
   }, ()=>{ alert('위치 정보를 가져오지 못했어요. 브라우저 권한을 확인해주세요.'); });
 });
 
-/* ---------- mobile view toggle ---------- */
-document.querySelectorAll('#viewToggle button').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    document.querySelectorAll('#viewToggle button').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    const view = btn.dataset.view;
-    document.getElementById('listPanel').classList.toggle('show', view==='list');
-    document.getElementById('listMore').style.display = view==='list' ? 'block':'none';
-    document.getElementById('mapWrap').style.display = view==='map' ? 'block':'none';
+/* ---------- mobile sheet mode ---------- */
+const mobileQuery = window.matchMedia('(max-width:860px)');
+
+function setMobileMode(mode){
+  document.body.classList.toggle('sheet-open', mode==='sheet');
+  document.querySelectorAll('#viewToggle button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.mode===mode);
   });
-});
-if(window.matchMedia('(max-width:860px)').matches){
-  document.getElementById('listPanel').classList.add('show');
 }
+
+document.querySelectorAll('#viewToggle button').forEach(btn=>{
+  btn.addEventListener('click', ()=> setMobileMode(btn.dataset.mode));
+});
+document.getElementById('sheetCloseBtn').addEventListener('click', ()=> setMobileMode('map'));
+
+/* start in map mode on mobile */
+if(mobileQuery.matches) setMobileMode('map');
 
 /* ---------- kakao key gate ---------- */
 function loadKakaoSdk(key){
